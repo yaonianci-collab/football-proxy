@@ -4,7 +4,7 @@ import sys, json, http.server, socketserver, subprocess, os, mimetypes, tempfile
 import urllib.request, urllib.error
 sys.stdout.reconfigure(encoding='utf-8')
 
-PORT = 8888
+PORT = 8080
 APP_ID = 'wx3fd155759aa48454'
 APP_SECRET = 'ccb1e245fc1d1b42a67726550c42f65c'
 ENV_ID = 'cloudbase-3g7hxqd4d0db11a9'
@@ -416,6 +416,41 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = self.path.strip('/')
+
+        # ── 健康检查端点 ──────────────────────────────
+        if path == 'health' or path == 'health/':
+            import time
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            status = {
+                'status': 'ok',
+                'pid': os.getpid(),
+                'time': time.strftime('%Y-%m-%d %H:%M:%S'),
+                'pose_analyzer': POSE_ANALYZER is not None,
+                'dify_configured': bool(DIFY_CONFIG.get('api_key')),
+                'port': PORT,
+            }
+            self.wfile.write(json.dumps(status, ensure_ascii=False).encode('utf-8'))
+            return
+
+        # ── 服务状态端点 ──────────────────────────────
+        if path == '' or path == 'index.html' or path == 'health':
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            status = {
+                'service': 'football-proxy',
+                'version': '2.1',
+                'status': 'running',
+                'endpoints': ['/health', '/analyze-video', '/generate-report'],
+            }
+            self.wfile.write(json.dumps(status, ensure_ascii=False).encode('utf-8'))
+            return
+
+        # ── 静态文件服务（web-admin）────────────────
         if path.startswith('web-admin/'):
             path = path[len('web-admin/'):]
         if path == '' or path == 'index.html':
