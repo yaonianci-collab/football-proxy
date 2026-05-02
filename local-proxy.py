@@ -208,10 +208,11 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
         """
         import urllib.request, ssl
 
-        action_type = req_data.get('actionType', req_data.get('type', 'auto'))
-        video_data = req_data.get('videoData', '')
-        video_url  = req_data.get('videoUrl', '')
-        video_id   = req_data.get('videoId', '')
+        # ── 兼容驼峰(camelCase)和下划线(snake_case)两种命名 ──
+        action_type = req_data.get('actionType', req_data.get('action_type', req_data.get('type', 'auto')))
+        video_data = req_data.get('videoData', req_data.get('video_data', ''))
+        video_url  = req_data.get('videoUrl', req_data.get('video_url', ''))
+        video_id   = req_data.get('videoId', req_data.get('video_id', ''))
 
         print(f'[Analyze] actionType={action_type}, videoUrl={video_url[:60] if video_url else "none"}')
 
